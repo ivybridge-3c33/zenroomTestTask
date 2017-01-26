@@ -1,0 +1,16 @@
+body {
+	padding-top: 15px;
+}
+#idroomtype {
+	max-width: 150px;
+}
+.changeRateLabel {
+	width: 150px;
+}
+#rateTable {
+	margin-top: 10px;
+	border-top: 2px solid #ccc;
+}
+.datepicker {
+	width: 100% !important;
+}

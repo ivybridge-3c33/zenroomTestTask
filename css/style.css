@@ -11,6 +11,32 @@ body {
 	margin-top: 10px;
 	border-top: 2px solid #ccc;
 }
-.datepicker {
+.dateRange {
 	width: 100% !important;
+}
+#rateMonthBox {
+	text-align: center;
+}
+#firstColumn {
+	width: 180px;
+}
+#selectMonthBtn {
+	cursor: pointer;
+}
+.monthBtn {
+	cursor: pointer;
+}
+.MonthDatePicker .ui-datepicker-year
+{
+    display:none;   
+}
+.HideTodayButton .ui-datepicker-buttonpane .ui-datepicker-current
+{
+    visibility:hidden;
+}
+
+.hide-calendar .ui-datepicker-calendar
+{
+	display:none!important;
+	visibility:hidden!important
 }

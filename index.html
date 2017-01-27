@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" ng-app="zenroomsApp">
 <head>
 	<meta charset="UTF-8">
 	<title>Document</title>
@@ -8,10 +8,10 @@
 	<link rel="stylesheet" href="assets/jquery-ui/jquery-ui.min.css">
 	<link rel="stylesheet" href="css/style.css">
 </head>
-<body>
+<body ng-controller="RateController">
 	
 	<div class="container-fluid">
-		<form class="form-inline" id="setRateForm">
+		<form class="form-inline" id="setRateForm" name="setRateForm" ng-submit="setRates()">
 			<table class="table table-condensed table-striped table-bordered">
 				<thead>
 					<tr>
@@ -23,29 +23,42 @@
 						<td>
 							<div class="form-group">
 								<label for="idroomtype">Select Room:</label>
-								<select name="idroomtype" id="idroomtype" class="form-control"><option value="">----select----</option></select>
+								<select ng-model="rateForm.idroomtype" id="idroomtype" class="form-control" name="idroomtype" required>
+									<option value="">----select----</option>
+									<option ng-repeat="roomtype in roomtypes"
+								            value="{{roomtype.idroomtype}}" data-minimumprice="{{roomtype.minimumprice}}">{{roomtype.roomtypename}}</option>
+								</select>
+								<span class="error" ng-show="setRateForm.$submitted && setRateForm.idroomtype.$error.required">Roomtypes is required.</span>
 							</div>
 						</td>
 					</tr>
 					<tr>
 						<td>
 							<div class="row">
-								<div class="col-sm-12 col-md-3">
+								<div class="col-sm-12 col-md-4">
 									<div class="row">
-										<div class="col-sm-3 col-md-3">
+										<div class="col-sm-3 col-md-4">
 											Select Days
 										</div>
-										<div class="col-sm-9 col-md-9">
+										<div class="col-sm-9 col-md-8">
 											<div class="row">
 												<div class="col-xs-3 col-sm-2 col-md-4">From</div>
-												<div class="col-xs-9 col-sm-4 col-md-8"><input type="text" class="form-control dateRange"></div>
+												<div class="col-xs-9 col-sm-4 col-md-8">
+													<input type="date" class="form-control dateRange" id="startDate" name="startDate" ng-model="rateForm.startDate" datepicker="#endDate" required placeholder="yyyy-MM-dd" >
+													<p class="error" ng-show="setRateForm.$submitted && setRateForm.startDate.$error.required">From date is required.</p>
+													<p class="error" ng-show="setRateForm.$submitted && setRateForm.startDate.$error.date">Not a valid date!</p>
+												</div>
 												<div class="col-xs-3 col-sm-2 col-md-4">To</div>
-												<div class="col-xs-9 col-sm-4 col-md-8"><input type="text" class="form-control dateRange"></div>
+												<div class="col-xs-9 col-sm-4 col-md-8">
+													<input type="date" class="form-control dateRange" id="endDate" name="endDate" min="rateForm.startDate" ng-model="rateForm.endDate" datepicker required placeholder="yyyy-MM-dd" >
+													<p class="error" ng-show="setRateForm.$submitted && setRateForm.endDate.$error.required">To date is required.</p>
+													<p class="error" ng-show="setRateForm.$submitted && setRateForm.endDate.$error.date">Not a valid date!</p>
+												</div>
 											</div>
 										</div>
 									</div>
 								</div>
-								<div class="col-sm-12 col-md-9">
+								<div class="col-sm-12 col-md-8">
 									<div class="row">
 										<div class="col-sm-12 col-md-2">
 											Refine Days:
@@ -54,21 +67,14 @@
 											<div class="row">
 												<div class="col-sm-5 col-md-3">
 													<div class="row">
-														<div class="col-xs-6 col-sm-12"><input type="checkbox" class="daysRange" data-rangetype="alldays"> All Days</div>
-														<div class="col-xs-6 col-sm-12"><input type="checkbox" class="daysRange" data-rangetype="weekday"> All Weekdays</div>
-														<div class="col-xs-6 col-sm-12"><input type="checkbox" class="daysRange" data-rangetype="weekend"> All Weekends</div>
+														<div class="col-xs-6 col-sm-12" ng-repeat="(key, val) in rateForm.daysRange"><input type="checkbox" name="daysRange[]" ng-model="val.Selected" value="{{val.value}}" ng-click="daysRangeToggle(val.value)">{{val.label}}</div>
 													</div>
 												</div>
 												<div class="col-sm-7 col-md-8">
 													<div class="row">
-														<div class="col-xs-6 col-sm-4"><input type="checkbox" class="day" name="day[]" data-datetype="weekday"> Mondays</div>
-														<div class="col-xs-6 col-sm-4"><input type="checkbox" class="day" name="day[]" data-datetype="weekday"> Tuesdays</div>
-														<div class="col-xs-6 col-sm-4"><input type="checkbox" class="day" name="day[]" data-datetype="weekday"> Wednesdays</div>
-														<div class="col-xs-6 col-sm-4"><input type="checkbox" class="day" name="day[]" data-datetype="weekday"> Thursdays</div>
-														<div class="col-xs-6 col-sm-4"><input type="checkbox" class="day" name="day[]" data-datetype="weekday"> Fridays</div>
-														<div class="col-xs-6 col-sm-4"><input type="checkbox" class="day" name="day[]" data-datetype="weekend"> Saturdays</div>
-														<div class="col-xs-6 col-sm-4"><input type="checkbox" class="day" name="day[]" data-datetype="weekend"> Sundays</div>
+														<div class="col-xs-6 col-sm-4" ng-repeat="(key, val) in rateForm.days"><input type="checkbox" name="days[]" ng-model="val.Selected" ng-click="dayToggle(val.type)" value="{{val.value}}" ng-change="countDay(val)"> <span class="days">{{val.label}}</span></div>
 													</div>
+													<p class="error" ng-show="setRateForm.$submitted && dayChecked == 0">Please select some day</p>
 												</div>
 											</div>
 										</div>
@@ -82,17 +88,29 @@
 							<table>
 								<tr>
 									<td class="changeRateLabel">Change Price To:</td>
-									<td><input type="number" step="0.01" class="form-control"></td>
+									<td>
+										<input type="number" min="0" ng-model="rateForm.price" name="price" step="0.01" class="form-control" required>
+										<p class="error" ng-show="setRateForm.$submitted && setRateForm.price.$error.required">Price is required.</p>
+										<p class="error" ng-show="setRateForm.$submitted && setRateForm.price.$error.number">Not a valid Price!</p>
+										<p class="error" ng-show="setRateForm.$submitted && setRateForm.price.$error.min">Price cannot less then 0</p>
+									</td>
 								</tr>
 								<tr>
 									<td>Change Availability To:</td>
-									<td><input type="text" class="form-control"></td>
+									<td>
+										<input type="number" min="0" step="1" ng-model="rateForm.availability" name="availability" class="form-control" required>
+										<p class="error" ng-show="setRateForm.$submitted && setRateForm.availability.$error.required">Availability is required.</p>
+										<p class="error" ng-show="setRateForm.$submitted && setRateForm.availability.$error.number">Not a valid Availability!</p>
+										<p class="error" ng-show="setRateForm.$submitted && setRateForm.availability.$error.min">Availability cannot less then 0</p>
+									</td>
 								</tr>
 							</table>
 						</td>
 					</tr>
 					<tr>
-						<td><button class="btn btn-default" type="reset">Cancel</button> <button class="btn btn-success" type="submit">Uodate</button></td>
+						<td>
+							<button class="btn btn-default" type="reset">Cancel</button> <button class="btn btn-success" type="submit">Uodate</button>
+						</td>
 					</tr>
 				</tbody>
 			</table>
@@ -103,9 +121,9 @@
 					<tr>
 						<th rowspan="3" id="firstColumn">Price and Availability</th>
 						<th id="rateMonthBox">
-							<span class="monthBtn" data-type="backward"><i class="fa fa-chevron-left" aria-hidden="true"></i></span> &nbsp;
-							<span id="selectMonthBtn"><i class="fa fa-caret-down" aria-hidden="true"></i></span> <input type="hidden" id="rateMonth" value=""><span id="monthLabel"></span> &nbsp; 
-							<span class="monthBtn" data-type="forward"><i class="fa fa-chevron-right" aria-hidden="true"></i></span>
+							<span class="monthBtn" ng-click="navigate('backward')"><i class="fa fa-chevron-left" aria-hidden="true"></i></span> &nbsp;
+							<span id="selectMonthBtn"><i class="fa fa-caret-down" aria-hidden="true"></i></span> <input type="hidden" id="rateMonth" ng-model="calendarDate" datepicker><span id="monthLabel">{{calendarLabel}}</span> &nbsp; 
+							<span class="monthBtn" ng-click="navigate('forward')"><i class="fa fa-chevron-right" aria-hidden="true"></i></span>
 							</th>
 					</tr>
 					<tr id="dayNumber"></tr>
@@ -117,10 +135,11 @@
 			</table>
 		</div>
 	</div>
+	<script src="assets/angular/angular.min.js"></script>
 	<script src="assets/jquery/jquery-3.1.1.min.js"></script>
 	<script src="assets/jquery-ui/jquery-ui.min.js"></script>
 	<script src="assets/bootstrap/js/bootstrap.min.js"></script>
 	<script src="assets/moment/moment.js"></script>
-	<script src="js/main.js"></script>
+	<script src="js/app.js"></script>
 </body>
 </html>

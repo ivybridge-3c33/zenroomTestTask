@@ -34,9 +34,15 @@ body {
 {
     visibility:hidden;
 }
-
 .hide-calendar .ui-datepicker-calendar
 {
 	display:none!important;
 	visibility:hidden!important
+}
+.error {
+	font-size: 10px;
+	color: red;
+}
+.days {
+	text-transform: capitalize;
 }

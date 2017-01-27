@@ -12,7 +12,7 @@ class app {
 			$pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
 			$this->db = $pdo;
 		} catch (PDOException $e) {
-			echo "DataBase Error: ".$e->getMessage();
+			echo json_encode(['errors' => "DataBase Error: ".$e->getMessage()]);
 		}
 
 		$urlData = [];
@@ -40,29 +40,51 @@ class app {
 		try {
 			$stmt = $this->db->prepare('select * from roomtype');
 			$stmt->execute();
-			echo json_encode($stmt->fetchAll());
+			echo json_encode();
+			$data = [];
+			foreach($stmt->fetchAll() as $arr){
+				$data[$arr['idroomtype']] = $arr;
+			}
+			echo json_encode($data);
 		} catch (PDOException $e) {
-		  echo "DataBase Error: ".$e->getMessage();
+			echo json_encode(['errors' => "DataBase Error: ".$e->getMessage()]);
 		} catch (Exception $e) {
-		  echo "General Error: ".$e->getMessage();
+			echo json_encode(['errors' => "Error: ".$e->getMessage()]);
 		}
 	}
 
 	private function getRates()
 	{
-		try {
-			$stmt = $this->db->prepare('');
-			$stmt->execute();
-			
-		} catch (PDOException $e) {
-		  echo "DataBase Error: ".$e->getMessage();
-		} catch (Exception $e) {
-		  echo "General Error: ".$e->getMessage();
+		if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+			try {
+				$date = $_POST['rateBetween'];
+				$startOfMonth =  date('Y-m-01', strtotime($date));
+				$endOfMonth =  date('Y-m-t', strtotime($date));
+				$stmt = $this->db->prepare('select * from roomtypes');
+				$stmt->execute();
+				$rates = [];
+				foreach($stmt->fetchAll() as $room){
+					$stmt = $this->db->prepare('select ratedate, price, available from rate where idroomtype = ? and ratedate between ? and ? and');
+					$stmt->execute(array($room['idroomtype'], $startOfMonth, $endOfMonth));
+					$room['rates'] = $stmt->fetchAll();
+					$rates[] = $room;
+				}
+				
+			} catch (PDOException $e) {
+				echo json_encode(['errors' => "DataBase Error: ".$e->getMessage()]);
+			} catch (Exception $e) {
+				echo json_encode(['errors' => "Error: ".$e->getMessage()]);
+			}
+		}else{
+			echo 'Access denined';
 		}
 	}
 
 	private function setRate()
 	{
+		if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+		}
 		
 	}
 

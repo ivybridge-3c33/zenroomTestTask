@@ -38,7 +38,7 @@ class app {
 	private function getRoomTypes()
 	{
 		try {
-			$stmt = $this->db->prepare('select * from roomtype');
+			$stmt = $this->db->prepare('select * from roomtype where active = 1');
 			$stmt->execute();
 			echo json_encode();
 			$data = [];
@@ -57,18 +57,23 @@ class app {
 	{
 		if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 			try {
-				$date = $_POST['rateBetween'];
-				$startOfMonth =  date('Y-m-01', strtotime($date));
-				$endOfMonth =  date('Y-m-t', strtotime($date));
-				$stmt = $this->db->prepare('select * from roomtypes');
+				$data = file_get_contents('php://input');
+				$postData = json_decode($data, true);
+				$date = $postData['startDate'];
+				$totalDayOfCalendar = $postData['totalDayOfCalendar'];
+				$startDate =  date('Y-m-d', strtotime($date));
+				$toDate =  date('Y-m-d', strtotime('+'.$totalDayOfCalendar. 'day', strtotime($date)));;
+				$stmt = $this->db->prepare('select * from roomtype where active = 1');
 				$stmt->execute();
 				$rates = [];
 				foreach($stmt->fetchAll() as $room){
-					$stmt = $this->db->prepare('select ratedate, price, available from rate where idroomtype = ? and ratedate between ? and ? and');
-					$stmt->execute(array($room['idroomtype'], $startOfMonth, $endOfMonth));
+					$stmt = $this->db->prepare('select ratedate, price, available from rate where idroomtype = ? and ratedate between ? and ? order by ratedate asc');
+					$stmt->execute([$room['idroomtype'], $startDate, $toDate]);
 					$room['rates'] = $stmt->fetchAll();
 					$rates[] = $room;
 				}
+
+				echo json_encode($rates);
 				
 			} catch (PDOException $e) {
 				echo json_encode(['errors' => "DataBase Error: ".$e->getMessage()]);
@@ -80,12 +85,43 @@ class app {
 		}
 	}
 
-	private function setRate()
+	private function setRates()
 	{
 		if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+			$data = file_get_contents('php://input');
+			$postData = json_decode($data, true);
+			$idroomtype = $postData['idroomtype'];
+			$price = $postData['price'];
+			$availability = $postData['availability'];
+			$days = $postData['days'];
 
+			$begin = new DateTime($postData['startDate']);
+			$end = new DateTime($postData['endDate']);
+
+			$interval = DateInterval::createFromDateString('1 day');
+			$period = new DatePeriod($begin, $interval, $end);
+
+			foreach ( $period as $dt ){
+				if(in_array($dt->format('N'), $days)){
+					try {
+						$rateDate = $dt->format('Y-m-d');
+						$key = $rateDate.'-'.$idroomtype;
+						$stmt = $this->db->prepare('INSERT INTO rate (idrate, idroomtype, price, available, ratedate) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE price = ?, available = ?');
+						$stmt->execute([$key, $idroomtype, $price, $availability, $rateDate, $price, $availability]);
+					} catch (PDOException $e) {
+						$this->db->rollBack();
+						echo json_encode(['errors' => "DataBase Error: ".$e->getMessage()]);
+					} catch (Exception $e) {
+						$this->db->rollBack();
+						echo json_encode(['errors' => "Error: ".$e->getMessage()]);
+					}
+				}
+			}
+
+			echo json_encode(['success' => '1']);
+		}else{
+			echo 'Access denined';
 		}
-		
 	}
 
 }

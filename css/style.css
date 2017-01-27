@@ -46,3 +46,40 @@ body {
 .days {
 	text-transform: capitalize;
 }
+#rateMonthBox {
+	width: 200px;
+	border: 1px;
+	margin: 0 auto;
+}
+#monthSelection {
+	position: absolute;
+    margin-left: -55px;
+    border: 1px solid #ccc;
+	width: 300px;
+	height: 86px;
+	background: #fff;
+	border-radius: 3px;
+	padding-top: 6px;
+}
+#rateMonthBox table {
+	width: 100%;
+}
+#rateMonthBox table #left, #rateMonthBox table #right{
+	width: 40px;
+}
+.top5px {
+	margin-top: 5px;
+}
+.weekendsLabel {
+	background: #963d3d;
+	color: #fff;
+	text-align: center;
+}
+.weekdaysLabel {
+	background: #a2a2a2;
+	color: #fff;
+	text-align: center;
+}
+.dayNo {
+	text-align: center;
+}

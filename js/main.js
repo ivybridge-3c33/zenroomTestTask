@@ -91,7 +91,7 @@ jQuery(document).ready(function($) {
 
 
 	$('body').on('click', '#selectMonthBtn', function(){
-		$('#rateMonth').datepicker('show');
+		
 	});
 
 	$('#setRateForm').submit(function(e){

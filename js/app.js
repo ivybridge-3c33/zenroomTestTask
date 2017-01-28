@@ -170,14 +170,6 @@ app.controller('RateController', function RateController($scope, $filter, $http,
 
   }
 
-  $scope.calendarToggle = function(){
-  	if($scope.showMonthSelection == true){
-      $scope.showMonthSelection = false;
-  	}else{
-      $scope.showMonthSelection = true;
-  	}
-  }
-
   $scope.months = function(){
   	var months = [];
   	for(var i = 1; i <= 12; i++){
@@ -201,7 +193,7 @@ app.controller('RateController', function RateController($scope, $filter, $http,
   	var currentDate = new Date();
   	var min = currentDate.getFullYear();
   	var max = min+3;
-	var years = [];
+    var years = [];
     for (var i = min; i <= max; i++) {
       years.push(i);
     }

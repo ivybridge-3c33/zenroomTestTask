@@ -154,7 +154,7 @@
 								<tr>
 									<td>Change Availability To:</td>
 									<td>
-										<input type="number" min="0" step="1" ng-model="rateForm.availability" name="availability" class="form-control" required>
+										<input type="number" min="0" max="{{maximumAvailability}}" step="1" ng-model="rateForm.availability" name="availability" class="form-control" required>
 										<p class="error" ng-show="setRateForm.$submitted && setRateForm.availability.$error.required">Availability is required.</p>
 										<p class="error" ng-show="setRateForm.$submitted && setRateForm.availability.$error.number">Not a valid Availability!</p>
 										<p class="error" ng-show="setRateForm.$submitted && setRateForm.availability.$error.min">Availability cannot less then 0</p>

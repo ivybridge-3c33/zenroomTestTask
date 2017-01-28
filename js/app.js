@@ -90,6 +90,13 @@ app.controller('RateController', function RateController($scope, $filter, $http,
     angular.forEach($scope.roomtypes, function(val){
       if(val.idroomtype == idroomtype){
         $scope.minimumPrice = val.minimumprice;
+        $scope.maximumAvailability = val.totalrooms;
+        if(parseInt(val.totalrooms) < parseInt($scope.rateForm.availability)){
+          $scope.rateForm.availability = parseInt(val.totalrooms);
+        }
+        if(parseFloat(val.minimumprice) > $scope.rateForm.price){
+          $scope.rateForm.price = parseFloat(val.minimumprice);
+        }
         return;
       }
     });

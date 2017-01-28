@@ -5,25 +5,81 @@
 	<title>Document</title>
 	<link rel="stylesheet" href="assets/bootstrap/css/bootstrap.min.css">
 	<link rel="stylesheet" href="assets/fontawesome/css/font-awesome.min.css">
+	<link rel="stylesheet" href="assets/angular-xeditable/css/xeditable.min.css">
 	<link rel="stylesheet" href="assets/jquery-ui/jquery-ui.min.css">
 	<link rel="stylesheet" href="css/style.css">
 </head>
 <body ng-controller="RateController">
 	
 	<div class="container-fluid">
+		<div id="roomTypeBox" ng-show="roomTypeBox" class="animate-show-hide">
+			<div id="top">
+				<a href="#" ng-click="roomTypeBox = !roomTypeBox"><i class="fa fa-window-close" aria-hidden="true"></i></a>
+			</div>
+			<div id="content" class="table-responsive">
+				<table class="table table-condensed table-bordered table-striped">
+					<thead><tr>
+						<th>Room Type Name</th>
+						<th>Description</th>
+						<th>Minimum Price</th>
+						<th>Total Rooms</th>
+						<th></th>
+					</tr></thead>
+					<tbody>
+						<tr ng-repeat="(index, val) in roomtypes">
+							<td>
+								<span editable-text="val.roomtypename" e-name="val.roomtypename" e-form="roomtypeForm" e-required>{{ val.roomtypename || 'empty' }}</span>
+        					</td>
+							<td>
+								<span editable-text="val.desciption" e-name="val.desciption" e-form="roomtypeForm">{{ val.desciption || 'empty' }}</span>
+							</td>
+							<td>
+								<span editable-text="val.minimumprice" e-name="val.minimumprice" e-form="roomtypeForm" e-min="0" e-required>{{ val.minimumprice || 'empty' }}</span>
+							</td>
+							<td>
+								<span editable-text="val.totalrooms" e-name="val.totalrooms" e-form="roomtypeForm" e-min="0" e-required>{{ val.totalrooms || 'empty' }}</span>
+							</td>
+							<td style="white-space: nowrap">
+					        <!-- form -->
+					        <form editable-form name="roomtypeForm" onbeforesave="saveRoomType(index, val)" ng-show="roomtypeForm.$visible" class="form-buttons form-inline" shown="inserted == val">
+					          <button type="submit" ng-disabled="roomtypeForm.$waiting" class="btn btn-primary">
+					            save
+					          </button>
+					          <button type="button" ng-disabled="roomtypeForm.$waiting" ng-click="roomtypeForm.$cancel(); cancelEdit(index, val)" class="btn btn-default">
+					            cancel
+					          </button>
+					        </form>
+					        <div class="buttons" ng-show="!roomtypeForm.$visible">
+					          <button type="button" class="btn btn-primary" ng-click="roomtypeForm.$show()">edit</button>
+					          <button type="button" class="btn btn-danger" ng-click="removeRoomType(index, val)">del</button>
+					        </div>  
+					      </td>
+						</tr>
+					</tbody>
+					<tfoot>
+						<tr>
+							<td colspan="100%"><button type="button" class="btn btn-default btn-sm" ng-click="addRoomType()">Add Roomtype</button></td>
+						</tr>
+					</tfoot>
+				</table>
+			</div>
+		</div>
 		<form class="form-inline" id="setRateForm" name="setRateForm" ng-submit="setRates()">
 			<table class="table table-condensed table-striped table-bordered">
 				<thead>
 					<tr>
-						<th><a id="operationBtn" href="javascript:void(0);">Bulk Operations</a></th>
+						<th>
+							<a href="javascript:void(0);" ng-click="hideOperation = !hideOperation">Bulk Operations</a> |
+							<a href="javascript:void(0);" ng-click="roomTypeBox = !roomTypeBox">Manage Roomtype</a> 
+						</th>
 					</tr>
 				</thead>
-				<tbody id="operationsBox">
+				<tbody id="operationsBox" ng-show="hideOperation" class="animate-show-hide">
 					<tr>
 						<td>
 							<div class="form-group">
 								<label for="idroomtype">Select Room:</label>
-								<select ng-model="rateForm.idroomtype" id="idroomtype" class="form-control" name="idroomtype" required>
+								<select ng-model="rateForm.idroomtype" id="idroomtype" class="form-control" name="idroomtype" ng-change="setMinimum(rateForm.idroomtype)" required>
 									<option value="">----select----</option>
 									<option ng-repeat="roomtype in roomtypes"
 								            value="{{roomtype.idroomtype}}" data-minimumprice="{{roomtype.minimumprice}}">{{roomtype.roomtypename}}</option>
@@ -89,10 +145,10 @@
 								<tr>
 									<td class="changeRateLabel">Change Price To:</td>
 									<td>
-										<input type="number" min="0" ng-model="rateForm.price" name="price" step="0.01" class="form-control" required>
+										<input type="number" min="{{minimumPrice}}" ng-model="rateForm.price" name="price" step="0.01" class="form-control" required>
 										<p class="error" ng-show="setRateForm.$submitted && setRateForm.price.$error.required">Price is required.</p>
 										<p class="error" ng-show="setRateForm.$submitted && setRateForm.price.$error.number">Not a valid Price!</p>
-										<p class="error" ng-show="setRateForm.$submitted && setRateForm.price.$error.min">Price cannot less then 0</p>
+										<p class="error" ng-show="setRateForm.$submitted && setRateForm.price.$error.min">Price cannot less then {{$minimumPrice}}</p>
 									</td>
 								</tr>
 								<tr>
@@ -115,12 +171,12 @@
 				</tbody>
 			</table>
 		</form>
-		<div id="rateTable">
+		<div id="rateTable" class="table-responsive">
 			<table class="table table-bordered table-condensed">
 				<thead>
 					<tr>
 						<th rowspan="3" id="firstColumn">Price and Availability</th>
-						<th colspan="100%">
+						<th colspan="{{totalDayOfCalendar}}">
 							<div id="rateMonthBox">
 								<table>
 									<tr>
@@ -155,16 +211,44 @@
 							</div>
 						</th>
 					</tr>
-					<tr id="dayNumber"><th ng-repeat="val in daysOfMonth" class="dayNo">{{val.day}}</th></tr>
+					<tr id="dayNumber"><th ng-repeat="val in daysOfMonth" class="dayNo">{{val.day}}-{{val.month}}</th></tr>
 					<tr id="dayLabel"><th ng-repeat="val in daysOfMonth" class="{{['Sat', 'Sun'].indexOf(val.label) != -1 ? 'weekendsLabel' : 'weekdaysLabel'}}">{{val.label}}</th></tr>
 				</thead>
 				<tbody id="rateList">
+					<tbody ng-repeat="val in rateList">
+						<tr>
+							<td ng-style="{background: colorList[$index % colorList.length]}" colspan="100%"><strong>{{val.roomtypename}}</strong></td>
+						</tr>
+						<tr class="roomAvailable">
+							<td>Rooms Available</td>
+							<td ng-repeat="day in val.rates" align="center">
+								<div ng-switch on="checkPastDay(day.ratedate)">
+									<div ng-switch-when="yes">{{ day.available }}</div>
+									<div class="popover-wrapper" ng-switch-default>
+										<a href="#" editable-number="day.available" e-max="{{val.totalrooms}}" e-name="day.available" e-min="0" e-max="5" onbeforesave="checkManualValue('available', day)" onaftersave="saveManualRate('available', day)">{{ day.available || 'empty' }}</a>
+									</div>
+								</div>
+							</td>
+						</tr>
+						<tr class="roomPrice">
+							<td>Price</td>
+							<td ng-repeat="day in val.rates" align="center">
+								<div ng-switch on="checkPastDay(day.ratedate)">
+									<div ng-switch-when="yes">{{ day.price }}</div>
+									<div class="popover-wrapper" ng-switch-default>
+										<a href="#" editable-number="day.price" e-name="day.price" e-min="{{val.minimumprice}}" onbeforesave="checkManualValue('price', day)" onaftersave="saveManualRate('price', day)">{{ day.price || 'empty' }}</a>
+									</div>
+								</div>
+							</td>
+						</tr>
+					</tbody>
 					
 				</tbody>
 			</table>
 		</div>
 	</div>
 	<script src="assets/angular/angular.min.js"></script>
+	<script src="assets/angular-xeditable/js/xeditable.min.js"></script>
 	<script src="assets/jquery/jquery-3.1.1.min.js"></script>
 	<script src="assets/jquery-ui/jquery-ui.min.js"></script>
 	<script src="assets/bootstrap/js/bootstrap.min.js"></script>

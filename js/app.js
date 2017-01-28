@@ -1,5 +1,10 @@
 
-var app = angular.module('zenroomsApp', []);
+var app = angular.module('zenroomsApp', ["xeditable"]);
+app.run(function(editableOptions, editableThemes) {
+  editableThemes.bs3.inputClass = 'input-sm';
+  editableThemes.bs3.buttonsClass = 'btn-sm';
+  editableOptions.theme = 'bs3'; // bootstrap3 theme. Can be also 'bs2', 'default'
+});
 /*app.directive('datepicker', function($parse){
     return {
         restrict: 'A',
@@ -34,7 +39,7 @@ var app = angular.module('zenroomsApp', []);
     }
 });*/
 
-app.controller('RateController', function RateController($scope, $http) {
+app.controller('RateController', function RateController($scope, $filter, $http, $q) {
   var today = new Date();
   var startDate = moment();
   $scope.totalDayOfCalendar = 15;
@@ -42,6 +47,7 @@ app.controller('RateController', function RateController($scope, $http) {
   $scope.calendarDate = startDate.format('YYYY-MM-DD');
   $scope.monthSelectionYear = startDate.format('YYYY');
   $scope.monthSelectionMonth = startDate.format('M');
+  $scope.minimumPrice = 0;
 
   $scope.dayChecked = 0;
   $scope.daysOfMonth = [];
@@ -67,6 +73,26 @@ app.controller('RateController', function RateController($scope, $http) {
       {value:7, label:"sunday", type: "weekend" }
     ]
 
+  }
+
+  $scope.colorList = [
+    '#7CB9E8',
+    '#669999',
+    '#E3DAC9',
+    '#FFC1CC',
+    '#E7FEFF',
+    '#f3946f',
+    '#c294da',
+    '#74a5d4',
+  ];
+
+  $scope.setMinimum = function(idroomtype){
+    angular.forEach($scope.roomtypes, function(val){
+      if(val.idroomtype == idroomtype){
+        $scope.minimumPrice = val.minimumprice;
+        return;
+      }
+    });
   }
 
   $scope.navigate = function(to) {
@@ -161,10 +187,14 @@ app.controller('RateController', function RateController($scope, $http) {
   }
 
   $scope.updateMonthSelection = function() {
-  	var newDate = moment([$scope.monthSelectionYear, $scope.monthSelectionMonth-1]);
-  	$scope.calendarDate = newDate.format('YYYY-MM-DD');
-  	$scope.calendarLabel = newDate.format('MMMM, Y');
-  	$scope.getRates();
+    if($scope.monthSelectionMonth > 0){
+    	var newDate = moment([$scope.monthSelectionYear, $scope.monthSelectionMonth-1]);
+    	$scope.calendarDate = newDate.format('YYYY-MM-DD');
+    	$scope.calendarLabel = newDate.format('MMMM, Y');
+    	$scope.getRates();
+    }else{
+      alert('Please select month');
+    }
   }
 
   $scope.years = function(){
@@ -180,11 +210,11 @@ app.controller('RateController', function RateController($scope, $http) {
 
   $scope.getRates = function() {
     var currentDate = moment($scope.calendarDate);
-    var startDate = currentDate.clone().startOf('day'); //.format('D');
+    var startDate = currentDate.clone().subtract(1, 'days').startOf('day'); //.format('D');
     var toDate = currentDate.add($scope.totalDayOfCalendar, 'days').clone().startOf('day'); //.format('D');
     var daysOfMonth = [];
-    while(startDate.add('days', 1).diff(toDate) < 0) {
-      daysOfMonth.push({day: startDate.format('D'), label: startDate.format('ddd')});
+    while(startDate.add(1, 'days').diff(toDate) < 0) {
+      daysOfMonth.push({day: startDate.format('D'), label: startDate.format('ddd'), month: startDate.format('MMM')});
     }
     $scope.daysOfMonth = daysOfMonth;
 
@@ -195,12 +225,11 @@ app.controller('RateController', function RateController($scope, $http) {
         headers: {'Content-Type': 'application/json'}
     }).then(function successCallback(response) {
         if(typeof response.data.errors == 'undefined'){
-
+          $scope.rateList = response.data;
         }else{
             alert('error', "Error cannot load data.", response.data.errors + 'error code '+response.status);
         }
     }, function errorCallback(response) {
-      console.log(response);
         alert('error', "Error Server error", 'error code '+response.status);
     });
   }
@@ -276,13 +305,111 @@ app.controller('RateController', function RateController($scope, $http) {
     }).then(function successCallback(response) {
         if(typeof response.data.success == 'string'){
         	alert('Update Success fully');
+          $scope.getRates();
         }else{
-          alert('error', "Error cannot load data.", response.data.errors + 'error code '+response.status);
+          alert('error', "Error cannot save data.", response.data.errors + 'error code '+response.status);
         }
     }, function errorCallback(response) {
-      console.log(response);
         alert('error', "Error Server error", 'error code '+response.status);
     });
   }
 
-});
+  $scope.saveManualRate = function(type, data){
+    $http({
+        method: 'POST',
+        url: 'app.php/saveManualRate',
+        data: data,
+        headers: {'Content-Type': 'application/json'}
+    }).then(function successCallback(response) {
+        alert('Update Success fully');
+        $scope.getRates();
+    }, function errorCallback(response) {
+        if(response.data != null){
+          alert(response.data.errors);
+        }
+        return "Error Server error", 'error code '+response.status;
+    });
+  }
+
+  $scope.checkManualValue = function(type, data){
+    if((!isNaN(data.price) && (function(x) { return (x | 0) === x; })(parseFloat(data.price)))==false){
+      return type+' must be numeric';
+    }
+    console.log(data);
+    if(type == 'price'){
+
+    }
+  }
+
+  $scope.newRec = 0;
+
+  $scope.addRoomType = function() {
+    $scope.inserted = {
+      roomtypename: '',
+      description: null,
+      minimumprice: 0,
+      totalrooms: 0,
+      isNew: true,
+    };
+    $scope.roomtypes['newRec'+$scope.newRec] = ($scope.inserted);
+    $scope.newRec++;
+  }
+
+  $scope.cancelEdit = function(index, val){
+    if(typeof val.isNew != 'undefined'){
+      delete $scope.roomtypes[index];
+    }
+  }
+
+  $scope.saveRoomType = function(index, val){
+      $http({
+          method: 'POST',
+          url: 'app.php/saveRoomType',
+          data: val,
+          headers: {'Content-Type': 'application/json'}
+      }).then(function successCallback(response) {
+          if(typeof response.data.data == 'object'){
+            alert('Data saved');
+            $scope.roomtypes[index] = response.data.data;
+            $scope.getRates();
+          }else{
+            alert('error', "Error cannot save data.", response.data.errors + 'error code '+response.status);
+          }
+      }, function errorCallback(response) {
+          alert('error', "Error Server error", 'error code '+response.status);
+      });
+  }
+
+  $scope.removeRoomType = function(index, val){
+    var idroomtype = val.idroomtype;
+    if(confirm('Are you sure to delete?')){
+      $http({
+          method: 'POST',
+          url: 'app.php/removeRoomType',
+          data: {idroomtype: idroomtype},
+          headers: {'Content-Type': 'application/json'}
+      }).then(function successCallback(response) {
+          if(typeof response.data.success == 'string'){
+            delete $scope.roomtypes[index];
+            delete $scope.rateList[index];
+            alert('Roomtype has been deleted');
+            $scope.getRates();
+          }else{
+            alert('error', "Error cannot delete roomtype .", response.data.errors + 'error code '+response.status);
+          }
+      }, function errorCallback(response) {
+          alert('error', "Error Server error", 'error code '+response.status);
+      });
+    }
+  }
+
+  $scope.checkPastDay = function(date){
+    var currentDate = new Date();
+    if(moment(date).toDate() < moment([currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate()]).toDate()){
+      return 'yes';
+    }
+    return 'no';
+  }
+
+
+}); 
